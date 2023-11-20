@@ -1,0 +1,7 @@
+.ruff_cache
+.idea
+dist
+build
+test
+__pycache__
+*.egg*
