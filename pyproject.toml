@@ -1,0 +1,20 @@
+[project]
+name = "sherry"
+version = "0.0.0"
+description = "Python web framework"
+readme = "README.md"
+license = { text = "BSD 2-Clause License" }
+maintainers = [{ name = "startracex" }]
+classifiers = ["Programming Language :: Python :: 3"]
+
+[project.urls]
+Repository = "https://github.com/startrace/sherry"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+src = ["sherry"]
+ignore = ["F401", "F403", "F811"]
+target-version = "py311"
