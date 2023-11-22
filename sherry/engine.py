@@ -1,8 +1,8 @@
 from typing import List, Tuple
 from wsgiref.simple_server import make_server
-from .withre import WithRE
-from .response import response
-from .methods import methods
+
+from . import methods
+from . import response
 from .requestcontext import RequestContext, HandlerFunc
 from .router import Router
 
@@ -40,9 +40,6 @@ class RouterGroup:
         """
         add a pattern to router
         """
-        if self.engine.re:
-            self.engine.with_re.add(method, pattern, *handlers)
-            return
         self.engine.router.add_route(method, self.prefix + pattern, *handlers)
 
     def get(self, pattern, *handlers):
@@ -104,22 +101,20 @@ class Engine(RouterGroup):
     engine: "Engine"
     no_route_handler: List["HandlerFunc"]
     no_method_handler: List["HandlerFunc"]
-    re: bool
-    with_re: "WithRE"
 
-    def __init__(self, re=False, baseURL=""):
+    def __init__(self, re=False, base=""):
         self.router_group = RouterGroup(engine=self)
         self.engine = self
         self.no_method_handler = [response.error_method_not_allow]
         self.no_route_handler = [response.error_not_found]
-        self.prefix = "" if baseURL == "/" else baseURL
+        self.prefix = "" if base == "/" else base
         self.groups = []
-
-        self.re = re
+        self.router = Router()
         if re:
-            self.with_re = WithRE()
-        else:
-            self.router = Router()
+            self.use_regex()
+
+    def use_regex(self):
+        self.router.re = True
 
     def run(
         self,
@@ -142,17 +137,18 @@ class Engine(RouterGroup):
         middlewares = self.middlewares
         ctx = RequestContext(env, self.engine)
         path = ctx.path()
-        if self.re:
-            trim_start = ""
-            for group in self.groups:
-                if path.startswith(group.prefix + "/"):
-                    trim_start = group.prefix
-                    middlewares.extend(list(group.middlewares))
-            handle_response = self.with_re.handle(ctx, trim_start)
+        prefix = ""
+
+        for group in self.groups:
+            print("group.prefix", group.prefix)
+            if path.startswith(group.prefix + "/"):
+                prefix = group.prefix
+                middlewares += group.middlewares
+
+        ctx.handlers = list(middlewares)
+        if self.router.re:
+            handle_response = self.router.handle_prefix(ctx, prefix)
         else:
-            for group in self.groups:
-                if path.startswith(group.prefix + "/"):
-                    middlewares.extend(list(group.middlewares))
-            ctx.handlers = middlewares
             handle_response = self.router.handle(ctx)
+
         return handle_response.start_response(start_response)
