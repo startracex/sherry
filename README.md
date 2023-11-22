@@ -17,7 +17,7 @@ app = Sherry()
 
 @get("/", app)
 def hello_world(request: Request):
-    return hi_str.format(request.query["name"] or "world")
+    return hi_str.format(request.query.get("name") or "world")
 
 
 app.run(9527)
