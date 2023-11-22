@@ -1,5 +1,7 @@
+import re
 from types import FunctionType
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
+
 from .node import Node
 from .requestcontext import RequestContext
 from .response import Response
@@ -32,12 +34,14 @@ def split_slash(s: str) -> List[str]:
 class Router:
     root: Node
     handlers: Dict[str, Dict[str, List[FunctionType]]]
+    re: bool
 
     def __init__(self):
         self.root = Node()
         self.handlers = {}
+        self.re = False
 
-    def add_route(self, method: str, pattern: str, *handler_func: Tuple[FunctionType]):
+    def add_route(self, method: str, pattern: str, *handler_func: FunctionType):
         """
         add pattern to router
 
@@ -45,8 +49,10 @@ class Router:
 
         expand handler functions to handlers[pattern][method.upper()]
         """
-        parts = parse_pattern(pattern)
-        self.root.insert(pattern, parts, 0)
+        if not self.re:
+            if pattern.count("/:") > 0 or pattern.count("/*") > 0:
+                parts = parse_pattern(pattern)
+                self.root.insert(pattern, parts, 0)
         if pattern not in self.handlers:
             self.handlers[pattern] = {}
         self.handlers[pattern][method.upper()] = list(handler_func)
@@ -83,18 +89,55 @@ class Router:
         :return: response handler's response
         """
         method = ctx.method()
-        path = ctx.path()
-        node, params = self.get_route(path)
+        key = ctx.path()
+        node, params = self.get_route(key)
         if node is not None:
-            handlers = self.handlers.get(node.pattern).get(method)
-            if handlers is not None:
-                ctx.params = params
-                ctx.handlers.extend(handlers)
+            # dynamic router
+            key = node.pattern
+
+        route_method = self.handlers.get(key)
+        if route_method:
+            # has route
+
+            method_handlers = route_method.get(method)
+            if method_handlers:
+                # has method
+                ctx.handlers.extend(method_handlers)
             else:
-                # has route, no method
+                # no method
                 ctx.handlers.extend(ctx.engine.no_method_handler)
         else:
             # no route
             ctx.handlers.extend(ctx.engine.no_route_handler)
-        # get response from ctx.next
+        return ctx.next()
+
+    def handle_prefix(self, ctx: RequestContext, prefix: str) -> Response:
+        """
+        handle a request
+
+        if no route defined, handle engine.no_route_handler
+
+        if route defined, no method defined, handle engine.no_method_handler
+
+        :param ctx: request
+        :param prefix: group prefix
+        :return: response handler's response
+        """
+        path = ctx.path()
+        method = ctx.method()
+        for regex in self.handlers:
+            if len(regex) < len(prefix) or len(regex[: len(prefix)]) < len(prefix):
+                continue
+            if re.match(regex[len(regex) :], path[len(regex) :]):
+                key = prefix + regex
+                handlers_map = self.handlers.get(key)
+                handlers = handlers_map.get(method)
+                if handlers is None:
+                    ctx.handlers.extend(ctx.engine.no_method_handler)
+                else:
+                    ctx.handlers.extend(handlers)
+                print(handlers)
+                return ctx.next()
+
+        ctx.handlers.extend(ctx.engine.no_route_handler)
         return ctx.next()
