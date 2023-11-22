@@ -1,6 +1,6 @@
 [project]
 name = "sherry"
-version = "0.0.0"
+version = "0.0.1"
 description = "Python web framework"
 readme = "README.md"
 license = { text = "BSD 2-Clause License" }
