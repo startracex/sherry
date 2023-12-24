@@ -8,15 +8,14 @@ class Node:
     is_wild: bool
 
     def __init__(
-        self,
-        pattern: str = "",
-        part: str = "",
-        children: List["Node"] = [],
-        is_wild=False,
+            self,
+            pattern: str = "",
+            part: str = "",
+            is_wild=False,
     ):
         self.pattern = pattern
         self.part = part
-        self.children = children
+        self.children = []
         self.is_wild = is_wild
 
     def insert(self, pattern: str, parts: List[str], height: int):
