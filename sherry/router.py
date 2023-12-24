@@ -85,12 +85,13 @@ class Router:
 
         if route defined, no method defined, handle engine.no_method_handler
 
-        :param ctx: request
+        :param ctx: request context
         :return: response handler's response
         """
         method = ctx.method()
         key = ctx.path()
         node, params = self.get_route(key)
+        ctx.params = params
         if node is not None:
             # dynamic router
             key = node.pattern
@@ -109,6 +110,7 @@ class Router:
         else:
             # no route
             ctx.handlers.extend(ctx.engine.no_route_handler)
+
         return ctx.next()
 
     def handle_prefix(self, ctx: RequestContext, prefix: str) -> Response:
@@ -128,7 +130,7 @@ class Router:
         for regex in self.handlers:
             if len(regex) < len(prefix) or len(regex[: len(prefix)]) < len(prefix):
                 continue
-            if re.match(regex[len(regex) :], path[len(regex) :]):
+            if re.match(regex[len(regex):], path[len(regex):]):
                 key = prefix + regex
                 handlers_map = self.handlers.get(key)
                 handlers = handlers_map.get(method)
