@@ -8,7 +8,7 @@ maintainers = [{ name = "startracex" }]
 classifiers = ["Programming Language :: Python :: 3"]
 
 [project.urls]
-Repository = "https://github.com/startrace/sherry"
+Repository = "https://github.com/startracex/sherry"
 
 [build-system]
 requires = ["setuptools>=61.0"]
