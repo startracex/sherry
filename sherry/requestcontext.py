@@ -1,5 +1,6 @@
 import urllib.parse
 from typing import List, Optional, TYPE_CHECKING
+
 from .response import Response
 from .utils import execute_func
 
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 
 class HandlerFunc:
     def __call__(
-        self, _1: Optional["Request"], _2: Optional["Response"]
+            self, _1: Optional["Request"], _2: Optional["Response"]
     ) -> Optional[Response]:
         pass
 
@@ -111,7 +112,10 @@ class RequestContext:
         return {k: v[0] for k, v in get_arguments.items()}
 
 
-Request = RequestContext
+class Request(RequestContext):
+    pass
+
+
 """
 alias of RequestContext
 """
