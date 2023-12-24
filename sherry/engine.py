@@ -140,7 +140,6 @@ class Engine(RouterGroup):
         prefix = ""
 
         for group in self.groups:
-            print("group.prefix", group.prefix)
             if path.startswith(group.prefix + "/"):
                 prefix = group.prefix
                 middlewares += group.middlewares
