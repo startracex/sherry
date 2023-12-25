@@ -109,10 +109,10 @@ def split_pattern(pattern):
     parts = []
     for part in pattern.split("/"):
         if part:
+            parts.append(part)
             _, _, is_multi = wild_of(part)
             if is_multi:
                 break
-            parts.append(part)
     return parts
 
 
