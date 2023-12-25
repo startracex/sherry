@@ -2,7 +2,7 @@ import re
 from types import FunctionType
 from typing import Dict, List, Optional
 
-from .node import Node
+from .node import Node, wild_of
 from .requestcontext import RequestContext
 from .response import Response
 
@@ -50,9 +50,7 @@ class Router:
         expand handler functions to handlers[pattern][method.upper()]
         """
         if not self.re:
-            if pattern.count("/:") > 0 or pattern.count("/*") > 0:
-                parts = parse_pattern(pattern)
-                self.root.insert(pattern, parts, 0)
+            self.root.set(pattern)
         if pattern not in self.handlers:
             self.handlers[pattern] = {}
         self.handlers[pattern][method.upper()] = list(handler_func)
@@ -64,17 +62,21 @@ class Router:
         get node and dynamic field mapping
         """
         search_parts = split_pattern(path)
-        node = self.root.search(search_parts, 0)
+        node = self.root.get(path)
         if node:
             params = {}
             parts = split_pattern(node.pattern)
             for index, part in enumerate(parts):
-                if part[0] == ":":
-                    params[part[1:]] = search_parts[index]
-                if part[0] == "*" and len(part) > 1:
-                    params[part[1:]] = "/".join(search_parts[index:])
-                    break
+                is_wild, wild_key, is_multi = wild_of(part)
+                if is_wild:
+                    if is_multi:
+                        params[wild_key] = "/".join(search_parts[index:])
+                        break
+                    else:
+                        params[wild_key] = search_parts[index]
+
             return node, params
+
         return None, None
 
     def handle(self, ctx: RequestContext) -> Response:
@@ -88,22 +90,20 @@ class Router:
         :param ctx: request context
         :return: response handler's response
         """
-        method = ctx.method()
-        key = ctx.path()
-        node, params = self.get_route(key)
+
+        node, params = self.get_route(ctx.path())
         ctx.params = params
         if node is not None:
-            # dynamic router
-            key = node.pattern
+            # has router
+            pattern = node.pattern
+            method = ctx.method()
 
-        route_method = self.handlers.get(key)
-        if route_method:
-            # has route
-
-            method_handlers = route_method.get(method)
-            if method_handlers:
+            h_p = self.handlers.get(pattern)
+            # if h_p:
+            h_p_m = h_p.get(method)
+            if h_p_m:
                 # has method
-                ctx.handlers.extend(method_handlers)
+                ctx.handlers.extend(h_p_m)
             else:
                 # no method
                 ctx.handlers.extend(ctx.engine.no_method_handler)
@@ -138,7 +138,6 @@ class Router:
                     ctx.handlers.extend(ctx.engine.no_method_handler)
                 else:
                     ctx.handlers.extend(handlers)
-                print(handlers)
                 return ctx.next()
 
         ctx.handlers.extend(ctx.engine.no_route_handler)
