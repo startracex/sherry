@@ -99,7 +99,6 @@ class Router:
             method = ctx.method()
 
             h_p = self.handlers.get(pattern)
-            # if h_p:
             h_p_m = h_p.get(method)
             if h_p_m:
                 # has method

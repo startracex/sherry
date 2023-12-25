@@ -34,7 +34,9 @@ class Node:
         is_wild, _, _ = wild_of(part)
         child = self.find_wild_child()
         if child and child.is_wild and is_wild:
-            return
+            print("WARNING: The following routes may conflict.")
+            warn_conflict(child.pattern, child.part)
+            warn_conflict(pattern, part)
 
         child = self.find_specific_child(part)
         if child is None:
@@ -59,12 +61,6 @@ class Node:
                 return result
 
         return None
-
-    # def match_child(self, part: str) -> Optional["Node"]:
-    #     for child in self.children:
-    #         if child.part == part or child.is_wild:
-    #             return child
-    #     return None
 
     def find_wild_child(self):
         for child in self.children:
@@ -131,3 +127,8 @@ def cmp(i: Node, j: Node):
         return 1
     else:
         return len(i.pattern) - len(j.pattern)
+
+
+def warn_conflict(s: str, h: str):
+    print(" " * 2 + s)
+    print(" " * 2 + " " * s.index(h) + "^" * len(h))
